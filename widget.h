@@ -11,6 +11,7 @@
 #include <QTableView>
 #include<QStandardItemModel>
 #include<QTimer>
+#include<QMessageBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -146,14 +147,18 @@ private slots:
    // void addNewPerson()
     void on_editButton_clicked();
     void itemsAreVisible(bool);
-    void editMode(QString, QString);
-    void on_saveButton_clicked();
+    void editMode(bool);
+    void addMode(bool);
+    //void on_saveButton_clicked();
     void onComboboxItemActivated(int index);
     bool compareStrings(QString, QString);
+    void equipmentListData(QString);
+    void on_saveEditButton_clicked();
 
-    void on_saveButton_2_clicked();
+    void on_saveAddButton_clicked();
 
 private:
+    QSqlQueryModel equipdModel;
     StringListModel *_model1;
     StringListModel *_filteredModel;
     Ui::Widget *ui;
@@ -164,15 +169,17 @@ private:
     QSqlQuery *qry;
     QSqlQuery *idQuery;
     QTimer *timer;
-    QStringList result;
+    QStringList result, eqList;
     QStringList reserveResult;
     QString stringReserve;
     QStringList sqlData(QString);
     QString sqlDataReserve(QString);
-    QString request;
+    QString request, eqRequest;
     QString searchString;
     int32_t idFinder(QString);
     QString Name, Surname, Patronymic, Post, Person;
+    QMessageBox error;
+
     //QSqlQuery *qu;
     //QSqlQueryModel *model;
    // QSqlQueryModel *model1;

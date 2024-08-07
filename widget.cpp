@@ -20,7 +20,7 @@
 #include <QCompleter>
 #include"CustomModel.h"
 #include<QTimer>
-
+#include<QPixmap>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -28,25 +28,35 @@ Widget::Widget(QWidget *parent)
 {
     ui->setupUi(this);
 
-    sdb = QSqlDatabase::addDatabase("QSQLITE");
-    edb = QSqlDatabase::addDatabase("QSQLITE");
-    sdb.setDatabaseName("C://Users//user//Documents//test2//staff.sqlite");
-    edb.setDatabaseName("C://Users//user//Documents//test2//equipments.sqlite");
-    if (!sdb.open())
-    {
-        qDebug() << "Error: sDB can not be opened";
-    }
+    QMessageBox error;
 
-    if (!edb.open())
+    sdb = QSqlDatabase::addDatabase("QSQLITE", "connection1");
+    edb = QSqlDatabase::addDatabase("QSQLITE", "connection2");
+    sdb.setDatabaseName("C://Users//user//Documents//test2//staff.sqlite");
+    edb.setDatabaseName("C://Users//user//Documents//test2//equipment.sqlite");
+
+    if(!sdb.open()){
+        error.setText("sdb.lastError()");
+        error.exec();
+        qDebug()<<sdb.lastError();
+    }
+    if(!edb.open())
     {
-        qDebug() << "Error: eDB can not be opened";
+        error.setText("edb.lastError()");
+        error.exec();
+        qDebug()<<edb.lastError();
     }
 
     QString Name, Surname, Patronymic, Post, Person;
+    QPixmap profilePic = QPixmap (":/tri.jpg");
+    ui->label->setPixmap(profilePic);
 
     itemsAreVisible(false);
-    ui->saveButton_2->setVisible(false);
-    ui->saveButton->setVisible(false);
+    ui->saveAddButton->setVisible(false);
+    ui->saveEditButton->setVisible(false);
+    ui->saveAddButton->setDisabled(true);
+    ui->saveEditButton->setDisabled(true);
+    ui->tableView->setVisible(false);
 
     ui->personData->setReadOnly(true);
     ui->comboBox->setEditable(true);
@@ -59,10 +69,12 @@ Widget::Widget(QWidget *parent)
     connect(ui->comboBox, SIGNAL(activated(int)), SLOT(onComboboxItemActivated(int)));
 
     request = "select name, surname, patronymic from staff";
+    eqRequest = "select * from current";
     sqlDataReserve(request);
     fillComboBox();
     performSearch();
-
+//    ui->comboBox->lineEdit()->setFocusPolicy(Qt::StrongFocus);
+//    ui->comboBox->lineEdit()->setFocus();
 }
 
 QString Widget::sqlDataReserve(QString request)
@@ -109,12 +121,14 @@ bool Widget::compareStrings(QString inputString, QString fullName)
 
 void Widget::itemsAreVisible(bool mode)
 {
+    ui->label->setVisible(mode);
     ui->editButton->setVisible(mode);
     ui->personData->setVisible(mode);
     ui->postData->setVisible(mode);
     ui->nspLable->setVisible(mode);
     ui->postLabel->setVisible(mode);
     ui->equipmentList->setVisible(mode);
+    ui->tableView->setVisible(mode);
 }
 
 
@@ -158,7 +172,7 @@ QStringList Widget::sqlData(QString request)
 
 void Widget::onSearchTextChanged()
 {
-   timer->start(300);
+   timer->start(1000);
 }
 
 void Widget::fillComboBox(){
@@ -196,7 +210,10 @@ void Widget::performSearch()
                 itemsAreVisible(false);
         }
         _model1->updateItem(filter);
+
         ui->comboBox->showPopup();
+        ui->comboBox->lineEdit()->setText(search);
+        ui->comboBox->setFocusProxy(ui->comboBox->lineEdit());
     }
 }
 
@@ -238,16 +255,6 @@ Widget::~Widget()
 //    qDebug()<<"proverka"<<test;
 
 //}
-
-
-void Widget::on_addButton_clicked()
-{
-    itemsAreVisible(true);
-    ui->saveButton_2->setVisible(true);
-    ui->postData->setReadOnly(false);
-    ui->personData->setReadOnly(false);
-}
-
 
 //void Widget::on_deleteButton_clicked()
 //{
@@ -340,40 +347,24 @@ void Widget::on_addButton_clicked()
 //    msg3.exec();
 //}
 
-void Widget::on_editButton_clicked()
+void Widget::editMode(bool mode)
 {
-    itemsAreVisible(true);
-    ui->saveButton->setVisible(false);
-    ui->personData->setReadOnly(false);
-    ui->postData->setReadOnly(false);
-}
-
-
-
-void Widget::editMode(QString person, QString post)
-{
-
-}
-
-
-void Widget::on_saveButton_clicked()
-{
-    Person = ui->personData->text();
-    Post = ui->postData->text();
-    QStringList separator = Person.split(" ");
-    Name = separator[0];
-    Surname = separator[1];
-    Patronymic = separator [2];
-    qDebug()<<request;
-    //int32_t id = idFinder(request);
-//    request = QString("UPDATE staff set name = '%1', surname = '%2', patronymic = '%3', post = '%4' where uniqueID = '%5'")
-//                  .arg(Name).arg(Surname).arg(Patronymic).arg(post).arg(id);
-//    sqlData(request);
-    itemsAreVisible(false);
+    ui->postData->setReadOnly(!mode);
+    ui->personData->setReadOnly(!mode);
+    ui->saveAddButton->setDisabled(mode);
+    ui->addButton->setDisabled(mode);
+    itemsAreVisible(mode);
+    ui->saveEditButton->setDisabled(!mode);
+    ui->saveEditButton->setVisible(mode);
+    ui->addButton->setDisabled(mode);
 }
 
 void Widget::onComboboxItemActivated(int index){
+    equipmentListData(eqRequest);
+    editMode(false);
+    addMode(false);
     QString item = _model1->itemData(index);
+    qDebug()<<"vibral"<<item;
     ui->comboBox->setCurrentText(item);
     QStringList separator = item.split(" ");
     Name = separator[0];
@@ -382,7 +373,7 @@ void Widget::onComboboxItemActivated(int index){
     //Post = separator[3];
     request = QString("select * from staff where name = '%1' and surname = '%2' and patronymic = '%3'")
                   .arg(Name).arg(Surname).arg(Patronymic);
-
+    sqlData(request);
     ui->personData->setText(Name + ' ' + Surname + ' ' + Patronymic);
     ui->postData->setText(Post);
     itemsAreVisible(true);
@@ -392,7 +383,7 @@ void Widget::onComboboxItemActivated(int index){
 }
 
 
-void Widget::on_saveButton_2_clicked()
+void Widget::on_saveEditButton_clicked()
 {
     Person = ui->personData->text();
     Post = ui->postData->text();
@@ -400,14 +391,69 @@ void Widget::on_saveButton_2_clicked()
     Name = separator[0];
     Surname = separator[1];
     Patronymic = separator [2];
-    qDebug()<<request;
-    //int32_t id = idFinder(request);
-    request = QString("insert into staff (name, surname, patronymic, post) values ('%1', '%2', '%3', '%4'")
-                  .arg(Name).arg(Surname).arg(Patronymic).arg(Post);
-    qDebug()<<request;
-
-    //    sqlData(request);
-    itemsAreVisible(false);
-    ui->saveButton_2->setVisible(false);
+    int32_t id = idFinder(request);
+    request = QString("UPDATE staff set name = '%1', surname = '%2', patronymic = '%3', post = '%4' where uniqueID = '%5'")
+               .arg(Name).arg(Surname).arg(Patronymic).arg(Post).arg(id);
+    qDebug()<< request;
+    sqlData(request);
+    editMode(false);
+    ui->postData->clear();
+    ui->personData->clear();
 }
 
+void Widget::on_editButton_clicked()
+{
+    editMode(true);
+}
+
+void Widget::on_saveAddButton_clicked()
+{
+    ui->addButton->setDisabled(false);
+    Person = ui->personData->text();
+    Post = ui->postData->text();
+    QStringList separator = Person.split(" ");
+    Name = separator[0];
+    Surname = separator[1];
+    Patronymic = separator [2];
+    request = QString("insert into staff (name, surname, patronymic, post) values ('%1', '%2', '%3', '%4')")
+                  .arg(Name).arg(Surname).arg(Patronymic).arg(Post);
+    qDebug()<<request;
+    sqlData(request);
+    addMode(false);
+    ui->addButton->setDisabled(false);
+    ui->postData->clear();
+    ui->personData->clear();
+}
+
+void Widget::on_addButton_clicked()
+{
+    addMode(true);
+}
+void Widget::addMode(bool mode)
+{
+    ui->tableView->setVisible(!mode);
+    ui->postData->setReadOnly(!mode);
+    ui->personData->setReadOnly(!mode);
+    ui->saveAddButton->setDisabled(!mode);
+    ui->saveAddButton->setVisible(mode);
+    ui->editButton->setDisabled(mode);
+    itemsAreVisible(mode);
+    ui->saveEditButton->setDisabled(mode);
+
+    ui->addButton->setDisabled(!mode);
+}
+
+void Widget::equipmentListData(QString eqRequest)
+{
+    QSqlQueryModel *equipdModel = new QSqlQueryModel;
+    qry = new QSqlQuery(edb);
+    qry->prepare(eqRequest);
+    if(qry->exec()){
+    equipdModel->setQuery(*qry);
+    ui->tableView->setModel(equipdModel);
+    qDebug()<<"5К НЕТВОРСА СЮДААААА: ";
+    }
+    else
+    qDebug()<<"ШМОТОК НЕТ)))"<<endl<<qry->lastError();
+
+}
