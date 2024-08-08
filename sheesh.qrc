@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>input.txt</file>
         <file>tri.jpg</file>
+        <file>equipment.sqlite</file>
+        <file>staff.sqlite</file>
     </qresource>
 </RCC>

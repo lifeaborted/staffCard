@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>806</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -42,40 +42,27 @@
   <widget class="QPushButton" name="deleteButton">
    <property name="geometry">
     <rect>
-     <x>140</x>
-     <y>540</y>
+     <x>670</x>
+     <y>420</y>
      <width>80</width>
      <height>24</height>
     </rect>
    </property>
    <property name="text">
-    <string>Delete</string>
+    <string>Удалить</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="selectButton">
+  <widget class="QPushButton" name="cancelButton">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>530</y>
+     <x>310</x>
+     <y>480</y>
      <width>80</width>
-     <height>41</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="text">
-    <string>Accept</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>40</y>
-     <width>701</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="editable">
-    <bool>true</bool>
+    <string>Отмена</string>
    </property>
   </widget>
   <widget class="QPushButton" name="editButton">
@@ -169,7 +156,7 @@
   <widget class="QPushButton" name="saveEditButton">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>540</x>
      <y>420</y>
      <width>80</width>
      <height>24</height>
@@ -182,7 +169,7 @@
   <widget class="QPushButton" name="saveAddButton">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>540</x>
      <y>420</y>
      <width>80</width>
      <height>24</height>
@@ -229,6 +216,59 @@
      <pointsize>8</pointsize>
     </font>
    </property>
+  </widget>
+  <widget class="QLineEdit" name="dataText">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>20</y>
+     <width>701</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+  </widget>
+  <widget class="QListView" name="dataBox">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>80</y>
+     <width>701</width>
+     <height>192</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+  </widget>
+  <widget class="QTabWidget" name="tabWidget">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>760</y>
+     <width>801</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <widget class="QWidget" name="tab">
+    <attribute name="title">
+     <string>Tab 1</string>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="tab_2">
+    <attribute name="title">
+     <string>Tab 2</string>
+    </attribute>
+   </widget>
   </widget>
  </widget>
  <resources/>

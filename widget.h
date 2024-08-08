@@ -150,12 +150,16 @@ private slots:
     void editMode(bool);
     void addMode(bool);
     //void on_saveButton_clicked();
-    void onComboboxItemActivated(int index);
+    void onComboboxItemActivated(const QModelIndex &index);
     bool compareStrings(QString, QString);
     void equipmentListData(QString);
     void on_saveEditButton_clicked();
 
     void on_saveAddButton_clicked();
+
+    void on_deleteButton_clicked();
+
+    void on_cancelButton_clicked();
 
 private:
     QSqlQueryModel equipdModel;
@@ -174,7 +178,7 @@ private:
     QString stringReserve;
     QStringList sqlData(QString);
     QString sqlDataReserve(QString);
-    QString request, eqRequest;
+    QString generalRequest, eqRequest, request;
     QString searchString;
     int32_t idFinder(QString);
     QString Name, Surname, Patronymic, Post, Person;
