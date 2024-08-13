@@ -22,6 +22,8 @@
 #include<QTimer>
 #include<QPixmap>
 #include<QTabWidget>
+#include<QDialog>
+#include<QDialogButtonBox>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -48,14 +50,23 @@ Widget::Widget(QWidget *parent)
         qDebug()<<edb.lastError();
     }
 
+    //QString title, description, serialNumber, comment, takeDate, returnDate;
+
     QString Name, Surname, Patronymic, Post, Person;
     QPixmap profilePic = QPixmap (":/tri.jpg");
     ui->label->setPixmap(profilePic);
 
-    itemsAreVisible(false);
+    QPixmap searchPic = QPixmap (":/lupa.png");
+    QSize PicSize (30, 30);
+    searchPic = searchPic.scaled(PicSize, Qt::KeepAspectRatio);
+    ui->searchLabel->setPixmap(searchPic);
 
-    ui->tabWidget->setVisible(false);
-    ui->tabWidget->setDisabled(true);
+    itemsAreVisible(false);
+    ui->eqSaveButton->setVisible(false);
+    ui->eqSaveButton->setDisabled(true);
+
+    ui->tabWidget->setTabVisible(1, false);
+    ui->tabWidget->setTabEnabled(1, false);
     ui->deleteButton->setDisabled(true);
     ui->addButton->setDisabled(false);
     ui->saveAddButton->setVisible(false);
@@ -64,8 +75,10 @@ Widget::Widget(QWidget *parent)
     ui->saveEditButton->setDisabled(true);
     ui->tableView->setVisible(false);
 
-    ui->personData->setReadOnly(true);
-    ui->dataBox->setHidden(true);;
+    ui->nameData->setReadOnly(true);
+    ui->surnameData->setReadOnly(true);
+    ui->patronymicData->setReadOnly(true);
+
     timer = new QTimer(this);
     timer->setSingleShot(true);
     ui->dataText->activateWindow();
@@ -74,17 +87,33 @@ Widget::Widget(QWidget *parent)
     connect(ui->dataText, SIGNAL(textEdited(QString)), SLOT(onSearchTextChanged()));
     connect (timer, SIGNAL(timeout()), SLOT(performSearch()));
     connect(ui->dataBox, SIGNAL(doubleClicked(QModelIndex)), SLOT(onComboboxItemActivated(QModelIndex)));
+    connect(ui->tableView, SIGNAL(clicked(QModelIndex)), SLOT(onTableViewItemActivated(QModelIndex)));
 
     generalRequest = "select name, surname, patronymic from staff";
-    eqRequest = "select * from current";
+    eqGeneralRequest = "select * from current";
     ui->dataText->setFocus();
     QTimer::singleShot(0, ui->dataText, SLOT(setFocus()));
     sqlDataReserve(generalRequest);
     fillComboBox();
-    performSearch();
+    //performSearch();
+
+    ui->eqDeleteButton->setVisible(false);
+    ui->eqDeleteButton->setEnabled(false);
+
+    ui->returnButton->setVisible(false);
+    ui->returnButton->setEnabled(false);
+
+    QSqlQueryModel equipedModelReserve;
+
+    ui->returnDateEdit->setEnabled(false);
+    ui->returnDateEdit->setVisible(false);
+
+    eqEditMode(false);
 }
 
-QString Widget::sqlDataReserve(QString req)
+
+
+QStringList Widget::sqlDataReserve(QString req)
 {
     stringReserve = "";
     qry = new QSqlQuery(sdb);
@@ -99,8 +128,8 @@ QString Widget::sqlDataReserve(QString req)
         stringReserve += Name+' '+Surname+' '+Patronymic+' ';
     }
 
-    _filteredModel = new StringListModel(reserveResult);
-    return stringReserve;
+    _cacheModel = new StringListModel(reserveResult);
+    return reserveResult;
 }
 
 bool Widget::compareStrings(QString inputString, QString fullName)
@@ -130,11 +159,14 @@ void Widget::itemsAreVisible(bool mode)
     ui->deleteButton->setVisible(mode);
     ui->label->setVisible(mode);
     ui->editButton->setVisible(mode);
-    ui->personData->setVisible(mode);
+    ui->nameData->setVisible(mode);
+    ui->surnameData->setVisible(mode);
+    ui->patronymicData->setVisible(mode);
     ui->postData->setVisible(mode);
-    ui->nspLable->setVisible(mode);
+    ui->nameLabel->setVisible(mode);
+    ui->surnameLabel->setVisible(mode);
+    ui->patronymicLabel->setVisible(mode);
     ui->postLabel->setVisible(mode);
-    ui->equipmentList->setVisible(mode);
     ui->tableView->setVisible(mode);
 }
 
@@ -155,13 +187,12 @@ QStringList Widget::sqlData(QString req)
     {
         itemsAreVisible(false);
     }
-
     return result;
 }
 
 void Widget::onSearchTextChanged()
 {
-   timer->start(1000);
+   timer->start(100);
 }
 
 void Widget::fillComboBox(){
@@ -177,9 +208,9 @@ void Widget::performSearch()
     QString search = ui->dataText->text();
     if(!search.isEmpty())
     {
-        for(int i = 0; i < _filteredModel->rowCount(); ++i)
+        for(int i = 0; i < _cacheModel->rowCount(); ++i)
         {
-            toCompare = _filteredModel->itemData(i);
+            toCompare = _cacheModel->itemData(i);
             if(compareStrings(search, toCompare))
             {
                 filter.append(toCompare);
@@ -194,7 +225,6 @@ void Widget::performSearch()
         qDebug()<<ui->dataText->isActiveWindow();
         ui->dataBox->setFocusProxy(ui->dataText);
         qDebug()<<ui->dataBox->isActiveWindow();
-        ui->dataBox->setHidden(false);
     }
     else
         fillComboBox();
@@ -223,58 +253,64 @@ void Widget::editMode(bool mode)
     ui->deleteButton->setVisible(mode);
     ui->deleteButton->setDisabled(!mode);
     ui->postData->setReadOnly(!mode);
-    ui->personData->setReadOnly(!mode);
+    ui->nameData->setReadOnly(!mode);
+    ui->surnameData->setReadOnly(!mode);
+    ui->patronymicData->setReadOnly(!mode);
     ui->saveAddButton->setDisabled(mode);
     ui->addButton->setDisabled(mode);
-    ui->addButton->setDisabled(!mode);
-    //itemsAreVisible(mode);
+    itemsAreVisible(mode);
     ui->saveEditButton->setDisabled(!mode);
     ui->saveEditButton->setVisible(mode);
-    ui->addButton->setDisabled(mode);
 }
 
 void Widget::onComboboxItemActivated(const QModelIndex &index){
-    editMode(false);
-    addMode(false);
-    QString item = _model1->data(index, Qt::DisplayRole).toString();
+    ui->tabWidget->setTabVisible(1, true);
+    ui->tabWidget->setTabEnabled(1, true);
+    //editMode(false);
+    //addMode(false);
+    item = _model1->data(index, Qt::DisplayRole).toString();
     ui->dataText->setText(item);
 
-    eqRequest = QString("select title, description, serialNumber, comment, takeDate, returnDate from history where NSP = '%1'")
+    eqGeneralRequest = QString("select title, description, serialNumber, comment, takeDate from current where NSP = '%1'")
                     .arg(item);
-    qDebug()<<eqRequest;
+    qDebug()<<eqGeneralRequest;
 
-    equipmentListData(eqRequest);
+    equipmentListData(eqGeneralRequest);
     QStringList separator = item.split(" ");
     Name = separator[0];
     Surname = separator[1];
     Patronymic = separator [2];
     request = QString("select * from staff where name = '%1' and surname = '%2' and patronymic = '%3'")
                   .arg(Name).arg(Surname).arg(Patronymic);
-    sqlData(request);
 
-    ui->personData->setText(Name + ' ' + Surname + ' ' + Patronymic);
+    sqlData(request);
+    ui->nameData->setText(Name);
+    ui->surnameData->setText(Surname);
+    ui->patronymicData->setText(Patronymic);
     ui->postData->setText(Post);
     itemsAreVisible(true);
-    ui->personData->setReadOnly(true);
+    ui->nameData->setReadOnly(true);
+    ui->surnameData->setReadOnly(true);
+    ui->patronymicData->setReadOnly(true);
+
     ui->postData->setReadOnly(true);
-    ui->dataBox->setHidden(true);
 }
 
 void Widget::on_saveEditButton_clicked()
 {
-    Person = ui->personData->text();
+    Name = ui->nameData->text();
+    Surname = ui->surnameData->text();
+    Patronymic = ui->patronymicData->text();
     Post = ui->postData->text();
-    QStringList separator = Person.split(" ");
-    if(separator.size() == 3 && !Post.isEmpty()){
-    Name = separator[0];
-    Surname = separator[1];
-    Patronymic = separator [2];
+    if(!Name.isEmpty() && !Surname.isEmpty() && !Patronymic.isEmpty() && !Post.isEmpty())
+    {
     int32_t id = idFinder(request);
     request = QString("UPDATE staff set name = '%1', surname = '%2', patronymic = '%3', post = '%4' where uniqueID = '%5'")
                .arg(Name).arg(Surname).arg(Patronymic).arg(Post).arg(id);
 
     sqlData(request);
-    fillComboBox();
+    _model1->updateItem(sqlData(generalRequest));
+    _cacheModel->updateItem(sqlData(generalRequest));
     editMode(false);
     itemsAreVisible(true);
     }
@@ -283,46 +319,57 @@ void Widget::on_saveEditButton_clicked()
     msg.setText("Введите корректные данные!");
     msg.exec();
     }
+
+    ui->editButton->setDisabled(false);
+    ui->editButton->setVisible(true);
 }
 
 void Widget::on_editButton_clicked()
 {
     editMode(true);
+    ui->editButton->setDisabled(true);
+    ui->editButton->setVisible(false);
 }
 
 void Widget::on_saveAddButton_clicked()
 {
-    ui->addButton->setDisabled(false);
-    Person = ui->personData->text();
+    Name = ui->nameData->text();
+    Surname = ui->surnameData->text();
+    Patronymic = ui->patronymicData->text();
     Post = ui->postData->text();
-    QStringList separator = Person.split(" ");
-    if(separator.size() == 3 && !Post.isEmpty())
+    if(!Name.isEmpty() && !Surname.isEmpty() && !Patronymic.isEmpty() && !Post.isEmpty())
     {
-        Name = separator[0];
-        Surname = separator[1];
-        Patronymic = separator [2];
         request = QString("insert into staff (name, surname, patronymic, post) values ('%1', '%2', '%3', '%4')")
                       .arg(Name).arg(Surname).arg(Patronymic).arg(Post);
 
         sqlData(request);
-        fillComboBox();
-        qDebug()<<result;
+        _model1->updateItem(sqlData(generalRequest));
+        _cacheModel->updateItem(sqlData(generalRequest));
         addMode(false);
 
         ui->addButton->setDisabled(false);
         ui->postData->clear();
-        ui->personData->clear();
+        ui->nameData->clear();
+        ui->surnameData->clear();
+        ui->patronymicData->clear();
     }
     else{
         QMessageBox msg;
         msg.setText("Введите корректные данные!");
         msg.exec();
     }
+        ui->dataText->clear();
+    ui->addButton->setDisabled(false);
+    ui->addButton->setVisible(true);
+    ui->tabWidget->setTabVisible(1, false);
+    ui->tabWidget->setTabEnabled(1, false);
 }
 
 void Widget::on_addButton_clicked()
 {
     addMode(true);
+    ui->addButton->setDisabled(true);
+    ui->addButton->setVisible(false);
 }
 void Widget::addMode(bool mode)
 {
@@ -331,7 +378,9 @@ void Widget::addMode(bool mode)
     ui->deleteButton->setDisabled(!mode);
     ui->tableView->setVisible(!mode);
     ui->postData->setReadOnly(!mode);
-    ui->personData->setReadOnly(!mode);
+    ui->nameData->setReadOnly(!mode);
+    ui->surnameData->setReadOnly(!mode);
+    ui->patronymicData->setReadOnly(!mode);
     ui->saveAddButton->setDisabled(!mode);
     ui->saveAddButton->setVisible(mode);
     ui->editButton->setDisabled(mode);
@@ -345,13 +394,13 @@ void Widget::equipmentListData(QString eqRequest)
     QSqlQueryModel *equipdModel = new QSqlQueryModel;
     qry = new QSqlQuery(edb);
     qry->prepare(eqRequest);
-    if(qry->exec()){
-    equipdModel->setQuery(*qry);
-    ui->tableView->setModel(equipdModel);
-    }
-    else
-    qDebug()<<"ШМОТОК НЕТ)))"<<endl<<qry->lastError();
+    if(qry->exec())
+    {
+        equipdModel->setQuery(*qry);
 
+        equipedModelReserve.setQuery(*qry);
+        ui->tableView->setModel(equipdModel);
+    }
 }
 
 void Widget::on_deleteButton_clicked()
@@ -365,13 +414,21 @@ void Widget::on_deleteButton_clicked()
     qDebug()<<"POSLE"<<request;
 
     sqlData(request);
-    fillComboBox();
+    _model1->updateItem(sqlData(generalRequest));
+    _cacheModel->updateItem(sqlData(generalRequest));
+
     qDebug()<<result;
     editMode(false);
 
     ui->deleteButton->setDisabled(true);
+    ui->addButton->setDisabled(false);
+    ui->editButton->setDisabled(false);
     ui->postData->clear();
-    ui->personData->clear();
+    ui->nameData->clear();
+    ui->surnameData->clear();
+    ui->patronymicData->clear();
+    ui->tabWidget->setTabVisible(1, false);
+    ui->tabWidget->setTabEnabled(1, false);
 }
 
 
@@ -379,5 +436,259 @@ void Widget::on_cancelButton_clicked()
 {
    addMode(false);
 //    editMode(false);
+}
+
+void Widget::on_eqAddButton_clicked()
+{
+   eqEditMode(true);
+
+   ui->titleEdit->clear();
+   ui->descriptionEdit->clear();
+   ui->serialNumberEdit->clear();
+   ui->commentEdit->clear();
+   ui->takeDateEdit->clear();
+   ui->dateLabel->setVisible(true);
+   ui->eqSaveEditButton->setVisible(false);
+   ui->eqSaveEditButton->setEnabled(false);
+   ui->takeDateEdit->setEnabled(true);
+   ui->takeDateEdit->setVisible(true);
+    ui->returnDateEdit->setVisible(false);
+}
+
+
+void Widget::on_eqSaveButton_clicked()
+{
+   eqEditMode(false);
+
+   ui->eqAddButton->setVisible(true);
+   ui->eqAddButton->setEnabled(true);
+
+    title = ui->titleEdit->text();
+    description = ui->descriptionEdit->text();
+    serialNumber = ui->serialNumberEdit->text();
+    comment = ui->commentEdit->text();
+    takeDate = ui->takeDateEdit->text();
+    //returnDate = ui->returnDateEdit->text();
+   if (!title.isEmpty() )
+   {
+
+   eqRequest = QString ("insert into current (NSP, title, description, serialNumber, comment, takeDate) values ('%1', '%2', '%3', '%4', '%5', date())")
+                   .arg(item).arg(title).arg(description).arg(serialNumber).arg(comment);
+   qDebug()<<eqRequest<<"daite pofarmit: "<<eqGeneralRequest;
+
+   equipmentListData(eqRequest);
+   equipmentListData(eqGeneralRequest);
+
+   ui->titleEdit->clear();
+   ui->descriptionEdit->clear();
+   ui->serialNumberEdit->clear();
+   ui->commentEdit->clear();
+   ui->takeDateEdit->clear();
+   }
+   else
+   {
+        QMessageBox msg;
+        msg.setText("Введите обязательные данные!");
+        msg.exec();
+   }
+}
+
+void Widget::eqEditMode(bool mode)
+{
+   ui->eqSaveEditButton->setVisible(mode);
+   ui->eqSaveEditButton->setEnabled(mode);
+
+   ui->eqSaveButton->setVisible(mode);
+   ui->eqSaveButton->setEnabled(mode);
+
+   ui->saveAddButton->setVisible(mode);
+   ui->saveAddButton->setEnabled(mode);
+
+    ui->eqDeleteButton->setVisible(mode);
+    ui->eqDeleteButton->setEnabled(mode);
+
+    ui->eqCancelButton->setVisible(mode);
+    ui->eqCancelButton->setEnabled(mode);
+
+    ui->titleEdit->setVisible(mode);
+    ui->serialNumberEdit->setVisible(mode);
+    ui->commentEdit->setVisible(mode);
+    ui->takeDateEdit->setVisible(mode);
+    ui->descriptionEdit->setVisible(mode);
+
+    ui->titleEdit->setEnabled(mode);
+    ui->serialNumberEdit->setEnabled(mode);
+    ui->commentEdit->setEnabled(mode);
+    ui->takeDateEdit->setEnabled(mode);
+    ui->descriptionEdit->setEnabled(mode);
+
+    ui->titleNumberLabel->setVisible(mode);
+    ui->descComLabel->setVisible(mode);
+    ui->dateLabel->setVisible(mode);
+}
+
+void Widget::onTableViewItemActivated(const QModelIndex &index)
+{
+
+
+   ui->returnButton->setVisible(true);
+   ui->returnButton->setEnabled(true);
+
+   eqEditMode(true);
+
+   ui->eqSaveButton->setVisible(false);
+
+   ui->eqSaveButton->setEnabled(false);
+
+   QModelIndexList indexes = ui->tableView->selectionModel()->selectedIndexes();
+   QModelIndex ind = ui->tableView->selectionModel()->currentIndex();
+   int row = ind.row();
+
+    QVariant data = equipedModelReserve.data(index);
+
+    title = equipedModelReserve.data(equipedModelReserve.index(row, 0)).toString();
+    description = equipedModelReserve.data(equipedModelReserve.index(row, 1)).toString();
+    serialNumber = equipedModelReserve.data(equipedModelReserve.index(row, 2)).toString();
+    comment = equipedModelReserve.data(equipedModelReserve.index(row, 3)).toString();
+    takeDate = equipedModelReserve.data(equipedModelReserve.index(row, 4)).toString();
+
+    if(isReturned()){
+        ui->returnButton->setVisible(true);
+        ui->returnButton->setEnabled(true);
+
+        qDebug()<<"vernul";
+    }
+    else
+    {
+        ui->returnButton->setVisible(false);
+        ui->returnButton->setEnabled(false);
+        qDebug()<<"ne vernul";
+    }
+    qDebug()<<"proverka"<<isReturned();
+
+    ui->titleEdit->setText(title);
+    ui->descriptionEdit->setText(description);
+    ui->serialNumberEdit->setText(serialNumber);
+    ui->commentEdit->setText(comment);
+    ui->takeDateEdit->setText(takeDate);
+}
+
+void Widget::on_eqSaveEditButton_clicked()
+{
+        eqEditMode(false);
+
+        ui->eqDeleteButton->setVisible(false);
+        ui->eqDeleteButton->setEnabled(false);
+
+        QString title1 = ui->titleEdit->text();
+        QString description1 = ui->descriptionEdit->text();
+        QString serialNumber1 = ui->serialNumberEdit->text();
+        QString comment1 = ui->commentEdit->text();
+        QString takeDate1 = ui->takeDateEdit->text();
+        //QString returnDate1 = ui->takeDateEdit->text();
+
+        eqRequest = QString ("update current set title = '%1', description = '%2', serialNumber = '%3', comment = '%4', takeDate = '%5' where title = '%6' and description = '%7' and serialNumber = '%8' and comment = '%9' and takeDate = '%10' and NSP = '%11'")
+                        .arg(title1).arg(description1).arg(serialNumber1).arg(comment1).arg(takeDate1).arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
+
+
+        equipmentListData(eqRequest);
+
+        equipmentListData(eqGeneralRequest);
+
+        ui->titleEdit->clear();
+        ui->descriptionEdit->clear();
+        ui->serialNumberEdit->clear();
+        ui->commentEdit->clear();
+        ui->takeDateEdit->clear();
+        ui->returnDateEdit->clear();
+}
+
+
+void Widget::on_eqDeleteButton_clicked()
+{
+        eqEditMode(false);
+
+        eqRequest = QString ("delete from current where NSP = '%1' and  title = '%2' and description = '%3' and serialNumber = '%4' and comment = '%5' and takeDate = '%6'")
+                        .arg(item).arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate);
+        qDebug()<<eqRequest;
+
+        equipmentListData(eqRequest);
+
+        equipmentListData(eqGeneralRequest);
+
+        ui->eqSaveButton->setVisible(true);
+        ui->eqAddButton->setVisible(true);
+        ui->eqSaveButton->setEnabled(true);
+        ui->eqAddButton->setEnabled(true);
+
+        ui->titleEdit->clear();
+        ui->descriptionEdit->clear();
+        ui->serialNumberEdit->clear();
+        ui->commentEdit->clear();
+        ui->takeDateEdit->clear();
+}
+
+
+
+
+
+void Widget::on_eqCancelButton_clicked()
+{
+    ui->returnButton->setVisible(false);
+    ui->returnButton->setEnabled(false);
+    ui->eqAddButton->setVisible(true);
+    ui->eqAddButton->setEnabled(true);
+    ui->titleEdit->clear();
+    ui->descriptionEdit->clear();
+    ui->serialNumberEdit->clear();
+    ui->commentEdit->clear();
+    ui->takeDateEdit->clear();
+    eqEditMode(false);
+
+}
+
+
+void Widget::on_returnButton_clicked()
+{
+
+    QDialog dialog(this);
+        QVBoxLayout *l = new QVBoxLayout(&dialog);
+
+    dialog.setWindowTitle("Внимание!");
+    QDialogButtonBox *newButton = new QDialogButtonBox(&dialog);
+    QLabel *accepting = new QLabel;
+    accepting->setAlignment(Qt::AlignCenter);
+    l->addWidget(newButton);
+    accepting->setText("Вы действительно хотите подтвердить возврат?");
+    l->addWidget(accepting);
+    dialog.setLayout(l);
+    newButton->setCenterButtons(true);
+    newButton->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+    connect(newButton, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(newButton, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    if(dialog.exec() == QDialog::Accepted)
+    {
+        eqRequest = QString ("update history set returnDate = date() where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
+                        .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
+        qDebug()<<"vozvrat"<<eqRequest;
+        equipmentListData(eqRequest);
+
+        equipmentListData(eqGeneralRequest);
+        eqEditMode(false);
+    }
+    ui->returnButton->setVisible(false);
+    ui->returnButton->setEnabled(false);
+}
+
+bool Widget::isReturned(){
+    QString req = QString ("select returnDate from history where NSP = '%1' and  title = '%2' and description = '%3' and serialNumber = '%4' and comment = '%5' and takeDate = '%6'")
+                            .arg(item).arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate);
+    qDebug()<<req;
+
+    qry = new QSqlQuery(edb);
+    qry->exec(req);
+    qry->next();
+    return qry->value(0).isNull();
 }
 

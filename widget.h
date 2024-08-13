@@ -79,7 +79,7 @@ public:
         return true;
     }
 
-    bool StringListModel::removeRows(int position, int rows, const QModelIndex &parent)
+    bool StringListModel::removeRows(int position, int rows, const QModelIndex &parent = QModelIndex())
     {
         if(parent.isValid())
         {
@@ -155,16 +155,34 @@ private slots:
     void equipmentListData(QString);
     void on_saveEditButton_clicked();
 
+    void eqEditMode(bool);
     void on_saveAddButton_clicked();
 
     void on_deleteButton_clicked();
 
     void on_cancelButton_clicked();
 
+    void on_eqAddButton_clicked();
+
+    void on_eqSaveButton_clicked();
+
+    void onTableViewItemActivated(const QModelIndex &index);
+
+    void on_eqSaveEditButton_clicked();
+
+    void on_eqDeleteButton_clicked();
+
+    bool isReturned();
+    void on_eqCancelButton_clicked();
+
+    void on_returnButton_clicked();
+
 private:
+    QString title, description, serialNumber, comment, takeDate, returnDate;
     QSqlQueryModel equipdModel;
+    QString item;
     StringListModel *_model1;
-    StringListModel *_filteredModel;
+    StringListModel *_cacheModel;
     Ui::Widget *ui;
     QSqlDatabase sdb;
     QSqlDatabase edb;
@@ -177,12 +195,15 @@ private:
     QStringList reserveResult;
     QString stringReserve;
     QStringList sqlData(QString);
-    QString sqlDataReserve(QString);
-    QString generalRequest, eqRequest, request;
+    QStringList sqlDataReserve(QString);
+    QString generalRequest, eqGeneralRequest, request, eqRequest;
     QString searchString;
     int32_t idFinder(QString);
     QString Name, Surname, Patronymic, Post, Person;
     QMessageBox error;
+    QSqlQueryModel _eqModel;
+
+    QSqlQueryModel equipedModelReserve;
 
     //QSqlQuery *qu;
     //QSqlQueryModel *model;

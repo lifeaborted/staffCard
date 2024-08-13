@@ -4,5 +4,7 @@
         <file>tri.jpg</file>
         <file>equipment.sqlite</file>
         <file>staff.sqlite</file>
+        <file>search.gif</file>
+        <file>lupa.png</file>
     </qresource>
 </RCC>
