@@ -153,7 +153,10 @@ private slots:
     void onComboboxItemActivated(const QModelIndex &index);
     bool compareStrings(QString, QString);
     void equipmentListData(QString);
+    void equipmentHistoryListData(QString);
     void on_saveEditButton_clicked();
+
+    void newPersonValid();
 
     void eqEditMode(bool);
     void on_saveAddButton_clicked();
@@ -168,6 +171,8 @@ private slots:
 
     void onTableViewItemActivated(const QModelIndex &index);
 
+    void historyItemActivated(const QModelIndex &index);
+
     void on_eqSaveEditButton_clicked();
 
     void on_eqDeleteButton_clicked();
@@ -177,9 +182,14 @@ private slots:
 
     void on_returnButton_clicked();
 
+    void on_returnDateEditButton_clicked();
+
+    void on_saveReturnDateEditButton_clicked();
+
 private:
     QString title, description, serialNumber, comment, takeDate, returnDate;
     QSqlQueryModel equipdModel;
+    QSqlQueryModel historyModel;
     QString item;
     StringListModel *_model1;
     StringListModel *_cacheModel;
@@ -196,7 +206,7 @@ private:
     QString stringReserve;
     QStringList sqlData(QString);
     QStringList sqlDataReserve(QString);
-    QString generalRequest, eqGeneralRequest, request, eqRequest;
+    QString generalRequest, eqGeneralRequest, request, eqRequest, eqHistoryRequest;
     QString searchString;
     int32_t idFinder(QString);
     QString Name, Surname, Patronymic, Post, Person;
@@ -204,6 +214,8 @@ private:
     QSqlQueryModel _eqModel;
 
     QSqlQueryModel equipedModelReserve;
+    QSqlQueryModel historyEquipedModelReserve;
+
 
     //QSqlQuery *qu;
     //QSqlQueryModel *model;

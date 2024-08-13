@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -61,9 +61,9 @@
     <widget class="QPushButton" name="deleteButton">
      <property name="geometry">
       <rect>
-       <x>590</x>
-       <y>450</y>
-       <width>151</width>
+       <x>600</x>
+       <y>390</y>
+       <width>121</width>
        <height>24</height>
       </rect>
      </property>
@@ -97,9 +97,9 @@
     <widget class="QPushButton" name="saveEditButton">
      <property name="geometry">
       <rect>
-       <x>430</x>
-       <y>450</y>
-       <width>151</width>
+       <x>440</x>
+       <y>390</y>
+       <width>121</width>
        <height>24</height>
       </rect>
      </property>
@@ -149,8 +149,8 @@
      </property>
      <property name="geometry">
       <rect>
-       <x>410</x>
-       <y>390</y>
+       <x>30</x>
+       <y>470</y>
        <width>151</width>
        <height>24</height>
       </rect>
@@ -162,8 +162,8 @@
     <widget class="QPushButton" name="addButton">
      <property name="geometry">
       <rect>
-       <x>410</x>
-       <y>390</y>
+       <x>30</x>
+       <y>470</y>
        <width>151</width>
        <height>24</height>
       </rect>
@@ -175,9 +175,9 @@
     <widget class="QPushButton" name="editButton">
      <property name="geometry">
       <rect>
-       <x>430</x>
-       <y>450</y>
-       <width>151</width>
+       <x>440</x>
+       <y>390</y>
+       <width>121</width>
        <height>24</height>
       </rect>
      </property>
@@ -185,26 +185,13 @@
       <string>Редактировать</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>660</y>
-       <width>80</width>
-       <height>24</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>BUBUB</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="cancelButton">
      <property name="geometry">
       <rect>
-       <x>300</x>
-       <y>630</y>
-       <width>80</width>
-       <height>21</height>
+       <x>230</x>
+       <y>470</y>
+       <width>151</width>
+       <height>24</height>
       </rect>
      </property>
      <property name="text">
@@ -424,16 +411,6 @@
       </rect>
      </property>
     </widget>
-    <widget class="QLineEdit" name="takeDateEdit">
-     <property name="geometry">
-      <rect>
-       <x>200</x>
-       <y>510</y>
-       <width>271</width>
-       <height>24</height>
-      </rect>
-     </property>
-    </widget>
     <widget class="QLineEdit" name="returnDateEdit">
      <property name="geometry">
       <rect>
@@ -509,6 +486,24 @@
       <string>Возврат</string>
      </property>
     </widget>
+    <widget class="QDateEdit" name="takeDateW">
+     <property name="geometry">
+      <rect>
+       <x>200</x>
+       <y>510</y>
+       <width>271</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="displayFormat">
+      <string>yyyy.MM.dd</string>
+     </property>
+    </widget>
     <zorder>returnButton</zorder>
     <zorder>tableView</zorder>
     <zorder>eqAddButton</zorder>
@@ -519,12 +514,105 @@
     <zorder>descriptionEdit</zorder>
     <zorder>serialNumberEdit</zorder>
     <zorder>commentEdit</zorder>
-    <zorder>takeDateEdit</zorder>
     <zorder>returnDateEdit</zorder>
     <zorder>titleNumberLabel</zorder>
     <zorder>descComLabel</zorder>
     <zorder>dateLabel</zorder>
     <zorder>eqCancelButton</zorder>
+    <zorder>takeDateW</zorder>
+   </widget>
+   <widget class="QWidget" name="tab_3">
+    <attribute name="title">
+     <string>История</string>
+    </attribute>
+    <widget class="QTableView" name="eqHistoryTableView">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>20</y>
+       <width>731</width>
+       <height>361</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>8</pointsize>
+      </font>
+     </property>
+    </widget>
+    <widget class="QDateEdit" name="returnDateEditW">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>430</y>
+       <width>161</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="displayFormat">
+      <string>yyyy.MM.dd</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="returnDateLabel">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>430</y>
+       <width>121</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Введите новую дату</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="returnDateEditButton">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>390</y>
+       <width>181</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Изменить дату возврата</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="saveReturnDateEditButton">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>390</y>
+       <width>181</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Применить</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="formLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>330</x>
+       <y>390</y>
+       <width>160</width>
+       <height>80</height>
+      </rect>
+     </property>
+     <layout class="QFormLayout" name="formLayout"/>
+    </widget>
    </widget>
   </widget>
  </widget>
