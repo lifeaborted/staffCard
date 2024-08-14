@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -297,6 +297,19 @@
      </property>
      <property name="text">
       <string>TextLabel</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="imageButton">
+     <property name="geometry">
+      <rect>
+       <x>440</x>
+       <y>430</y>
+       <width>121</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Изменить фото</string>
      </property>
     </widget>
    </widget>

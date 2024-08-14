@@ -24,6 +24,7 @@
 #include<QTabWidget>
 #include<QDialog>
 #include<QDialogButtonBox>
+#include<QFileDialog>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -54,8 +55,6 @@ Widget::Widget(QWidget *parent)
     //QString title, description, serialNumber, comment, takeDate, returnDate;
 
     QString Name, Surname, Patronymic, Post, Person;
-    QPixmap profilePic = QPixmap (":/tri.jpg");
-    ui->label->setPixmap(profilePic);
 
     QPixmap searchPic = QPixmap (":/lupa.png");
     QSize PicSize (30, 30);
@@ -63,6 +62,10 @@ Widget::Widget(QWidget *parent)
     ui->searchLabel->setPixmap(searchPic);
 
     itemsAreVisible(false);
+
+    ui->imageButton->setVisible(false);
+    ui->imageButton->setEnabled(false);
+
     ui->eqSaveButton->setVisible(false);
     ui->eqSaveButton->setDisabled(true);
 
@@ -101,6 +104,11 @@ Widget::Widget(QWidget *parent)
     connect(ui->surnameData, &QLineEdit::textEdited, this, &Widget::newPersonValid);
     connect(ui->patronymicData, &QLineEdit::textEdited, this, &Widget::newPersonValid);
     connect(ui->postData, &QLineEdit::textEdited, this, &Widget::newPersonValid);
+
+    connect(ui->nameData, &QLineEdit::textEdited, this, &Widget::editPersonValid);
+    connect(ui->surnameData, &QLineEdit::textEdited, this, &Widget::editPersonValid);
+    connect(ui->patronymicData, &QLineEdit::textEdited, this, &Widget::editPersonValid);
+    connect(ui->postData, &QLineEdit::textEdited, this, &Widget::editPersonValid);
 
     connect(ui->serialNumberEdit, &QLineEdit::textEdited, this, &Widget::newEquipmentValid);
     connect(ui->titleEdit, &QLineEdit::textEdited, this, &Widget::newEquipmentValid);
@@ -145,7 +153,48 @@ Widget::Widget(QWidget *parent)
     ui->deleteButton->setEnabled(false);
 }
 
+void Widget::uploadImage()
+{
+    qry = new QSqlQuery(sdb);
+    qry->prepare("select photo from staff where uniqueID = ?");
+    qry->addBindValue(id);
+    if(!qry->exec()){
+         qDebug()<<"NE VIGRUZIL"<<qry->lastError();
+         return;
+    }
+    if(qry->next())
+    {
+         QByteArray imageData = qry->value(0).toByteArray();
+         QPixmap profilePic;
+         profilePic.loadFromData(imageData);
+         ui->label->setPixmap(profilePic);
+    }
+}
 
+void Widget::insertImage()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, "Выберите изображение", "", "Images (*.png *.jpg *.bmp)");
+    if (fileName.isEmpty())
+    {
+         qDebug()<<"PUSTO";
+         return;
+    }
+    QFile file(fileName);
+    if(!file.open(QIODevice::ReadOnly)){
+         qDebug()<<"NOT OPENED";
+         return;
+    }
+    QByteArray imageData = file.readAll();
+    file.close();
+
+    qry = new QSqlQuery(sdb);
+    qry->prepare("UPDATE staff set photo = ? where uniqueID = ?");
+    qry->addBindValue(imageData);
+    qry->addBindValue(id);
+    qDebug()<<"INSERTIMAGE"<<id<<imageData;
+    if(qry->exec())
+         qDebug()<<"INSER IMAGE WARNING"<<qry->lastError();
+}
 
 QStringList Widget::sqlDataReserve(QString req)
 {
@@ -254,9 +303,7 @@ void Widget::performSearch()
 
         ui->dataText->setText(search);
         ui->dataText->setFocus();
-        qDebug()<<ui->dataText->isActiveWindow();
         ui->dataBox->setFocusProxy(ui->dataText);
-        qDebug()<<ui->dataBox->isActiveWindow();
     }
     else
         fillComboBox();
@@ -314,7 +361,6 @@ void Widget::onComboboxItemActivated(const QModelIndex &index)
 
     eqGeneralRequest = QString("select title, description, serialNumber, comment, takeDate from current where NSP = '%1'")
                     .arg(item);
-    qDebug()<<eqGeneralRequest;
     eqHistoryRequest = QString("select title, description, serialNumber, comment, takeDate, returnDate from history where NSP = '%1'")
                            .arg(item);
     equipmentListData(eqGeneralRequest);
@@ -325,6 +371,10 @@ void Widget::onComboboxItemActivated(const QModelIndex &index)
     Patronymic = separator [2];
     request = QString("select * from staff where name = '%1' and surname = '%2' and patronymic = '%3'")
                   .arg(Name).arg(Surname).arg(Patronymic);
+
+    id = idFinder(request);
+    uploadImage();
+    qDebug()<<"nazhal"<<id;
 
     sqlData(request);
     ui->nameData->setText(Name);
@@ -349,9 +399,6 @@ void Widget::on_saveEditButton_clicked()
     Surname = ui->surnameData->text();
     Patronymic = ui->patronymicData->text();
     Post = ui->postData->text();
-    if(!Name.isEmpty() && !Surname.isEmpty() && !Patronymic.isEmpty() && !Post.isEmpty())
-    {
-    int32_t id = idFinder(request);
     request = QString("UPDATE staff set name = '%1', surname = '%2', patronymic = '%3', post = '%4' where uniqueID = '%5'")
                .arg(Name).arg(Surname).arg(Patronymic).arg(Post).arg(id);
 
@@ -360,19 +407,20 @@ void Widget::on_saveEditButton_clicked()
     _cacheModel->updateItem(sqlData(generalRequest));
     editMode(false);
     itemsAreVisible(true);
-    }
-    else{
-    QMessageBox msg;
-    msg.setText("Введите корректные данные!");
-    msg.exec();
-    }
 
     ui->editButton->setDisabled(false);
     ui->editButton->setVisible(true);
+
+    ui->imageButton->setVisible(false);
+    ui->imageButton->setEnabled(false);
+    uploadImage();
 }
 
 void Widget::on_editButton_clicked()
 {
+    ui->imageButton->setVisible(true);
+    ui->imageButton->setEnabled(true);
+
     ui->cancelButton->setVisible(true);
     ui->cancelButton->setEnabled(true);
 
@@ -479,21 +527,18 @@ void Widget::equipmentHistoryListData(QString req)
 
 void Widget::on_deleteButton_clicked()
 {
+    ui->dataText->clear();
     ui->editButton->setVisible(false);
     ui->editButton->setEnabled(false);
     QStringList separator = Person.split(" ");
-    qDebug()<<"pered id"<<request;
     int32_t id = idFinder(request);
-    qDebug()<<"IDISHNIK"<<id;
     request = QString("delete from staff where UniqueID = '%1'")
                   .arg(id);
-    qDebug()<<"POSLE"<<request;
 
     sqlData(request);
     _model1->updateItem(sqlData(generalRequest));
     _cacheModel->updateItem(sqlData(generalRequest));
 
-    qDebug()<<result;
     editMode(false);
 
     ui->deleteButton->setDisabled(true);
@@ -561,7 +606,6 @@ void Widget::on_eqSaveButton_clicked()
 
    eqRequest = QString ("insert into current (NSP, title, description, serialNumber, comment, takeDate) values ('%1', '%2', '%3', '%4', '%5', date())")
                    .arg(item).arg(title).arg(description).arg(serialNumber).arg(comment);
-           qDebug()<<"NEW PERSON"<<endl<<"{"<<eqRequest<<endl<<eqGeneralRequest<<endl<<"}";
 
    equipmentListData(eqRequest);
    equipmentListData(eqGeneralRequest);
@@ -634,10 +678,7 @@ void Widget::onTableViewItemActivated(const QModelIndex &index)
 
     reqRowId = QString("select rowid from current where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
                    .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
-    qDebug()<<"ZAPROS ID"<<reqRowId;
     eqID = eqRowId(reqRowId);
-
-    qDebug()<<"onTableViewItemActivated"<<title<<description<<serialNumber<<comment<<takeDate;
 
     ui->returnButton->setVisible(isReturned());
     ui->returnButton->setEnabled(isReturned());
@@ -665,8 +706,6 @@ void Widget::on_eqSaveEditButton_clicked()
         eqRequest = QString ("update current set title = '%1', description = '%2', serialNumber = '%3', comment = '%4', takeDate = '%5' where rowid = '%6'")
                         .arg(title1).arg(description1).arg(serialNumber1).arg(comment1).arg(takeDate1).arg(eqID);
 
-        qDebug()<<"SOHRANENIE"<<endl<<"{"<<eqRequest<<endl<<eqGeneralRequest<<endl<<"}";
-
         equipmentListData(eqRequest);
 
         equipmentListData(eqGeneralRequest);
@@ -686,7 +725,6 @@ void Widget::on_eqDeleteButton_clicked()
 
     eqRequest = QString ("delete from current where rowid = '%1'")
                     .arg(eqID);
-    qDebug()<<"UDALENIE"<<endl<<"{"<<eqRequest<<endl<<eqGeneralRequest<<endl<<"}";
 
     equipmentListData(eqRequest);
     equipmentListData(eqGeneralRequest);
@@ -747,7 +785,6 @@ void Widget::on_returnButton_clicked()
     {
         eqRequest = QString ("update history set returnDate = date() where rowid = '%1'")
                         .arg(eqID);
-        qDebug()<<"vozvrat"<<eqRequest;
         equipmentListData(eqRequest);
         equipmentListData(eqGeneralRequest);
         equipmentHistoryListData(eqHistoryRequest);
@@ -760,7 +797,6 @@ void Widget::on_returnButton_clicked()
 bool Widget::isReturned(){
     QString req = QString ("select returnDate from history where rowid = '%1'")
                             .arg(eqID);
-    qDebug()<<"test"<<req;
 
     qry = new QSqlQuery(edb);
     qry->exec(req);
@@ -807,7 +843,7 @@ void Widget::on_saveReturnDateEditButton_clicked()
     QString date = ui->returnDateEditW->text();
     QString req = QString ("update history set returnDate = '%1' where rowid = '%2'")
                       .arg(date).arg(eqID);
-    qDebug()<<"UPDATE HISTORY"<<endl<<req;
+
     equipmentHistoryListData(req);
     equipmentHistoryListData(eqHistoryRequest);
 }
@@ -828,7 +864,7 @@ void Widget::historyItemActivated(const QModelIndex &index)
 
     reqRowId = QString("select rowid from history where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
                    .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
-    qDebug()<<"ZAPROS ID"<<reqRowId;
+
     eqID = eqRowId(reqRowId);
 
     ui->returnDateEditButton->setVisible(!isReturned());
@@ -840,8 +876,14 @@ void Widget::newPersonValid()
 {
     bool status = !ui->nameData->text().isEmpty() && !ui->patronymicData->text().isEmpty() && !ui->surnameData->text().isEmpty() && !ui->postData->text().isEmpty();
 
-    ui->saveAddButton->setEnabled(status);
+    ui->saveEditButton->setEnabled(status);
+}
 
+void Widget::editPersonValid()
+{
+    bool status = !ui->nameData->text().isEmpty() && !ui->patronymicData->text().isEmpty() && !ui->surnameData->text().isEmpty() && !ui->postData->text().isEmpty();
+
+    ui->saveAddButton->setEnabled(status);
 }
 
 void Widget::newEquipmentValid()
@@ -856,10 +898,61 @@ int32_t Widget::eqRowId(QString req)
     if(qry->exec(req))
     {
     qry->next();
-        qDebug()<<"NOMER OF EQ"<<qry->value(0);
     return qry->value(0).toInt();
     }
     else
     qDebug()<<qry->lastError();
 
 }
+
+int Widget::DamerauLevenshtein(const std::string& user_str, const std::string& dict_str)
+{
+    const static size_t kMaxStrLength = 255;
+    int trace_[kMaxStrLength + 1][kMaxStrLength + 1];
+
+    size_t user_sz = user_str.size();
+    size_t dict_sz = dict_str.size();
+    for (size_t i = 0; i <= user_sz; ++i) {
+    trace_[i][0] = i << 1;
+    }
+    for (size_t j = 1; j <= dict_sz; ++j) {
+    trace_[0][j] = j << 1;
+    }
+    for (size_t j = 1; j <= dict_sz; ++j)
+    {
+    for (size_t i = 1; i <= user_sz; ++i)
+    {
+            // Учтем вставки, удаления и замены
+            int rcost = 2;
+            int dist0 = trace_[i - 1][j] + 2;
+            int dist1 = trace_[i][j - 1] + 2;
+            int dist2 = trace_[i - 1][j - 1] + rcost;
+            trace_[i][j] = std::min(dist0, std::min(dist1, dist2));
+            // Учтем обмен
+            if (i > 1 && j > 1 &&
+                user_str[i - 1] == dict_str[j - 2] &&
+                user_str[i - 2] == dict_str[j - 1])
+            {
+                trace_[i][j] = std::min(trace_[i][j],
+                                        trace_[i - 2][j - 2] + 1);
+            }
+    }
+    }
+    // Возьмем минимальное
+    // префиксное расстояние
+    int min_dist = trace_[user_sz][0];
+    for (size_t i = 1; i <= dict_sz; ++i)
+    {
+    if (trace_[user_sz][i] < min_dist)
+            min_dist = trace_[user_sz][i];
+    }
+    return min_dist;
+}
+
+
+void Widget::on_imageButton_clicked()
+{
+    insertImage();
+    //imageButton
+}
+

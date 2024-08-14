@@ -158,6 +158,8 @@ private slots:
 
     void newPersonValid();
 
+    void editPersonValid();
+
     void newEquipmentValid();
 
     void eqEditMode(bool);
@@ -180,6 +182,7 @@ private slots:
     void on_eqDeleteButton_clicked();
 
     bool isReturned();
+
     void on_eqCancelButton_clicked();
 
     void on_returnButton_clicked();
@@ -187,6 +190,14 @@ private slots:
     void on_returnDateEditButton_clicked();
 
     void on_saveReturnDateEditButton_clicked();
+
+    void insertImage();
+
+    void uploadImage();
+
+
+
+    void on_imageButton_clicked();
 
 private:
     QString title, description, serialNumber, comment, takeDate, returnDate;
@@ -212,6 +223,8 @@ private:
     QString searchString;
     int32_t idFinder(QString);
     int32_t eqRowId(QString);
+
+   // QString LevenshteinDistance(QString, QString);
     QString Name, Surname, Patronymic, Post, Person;
     QMessageBox error;
     QSqlQueryModel _eqModel;
@@ -219,8 +232,9 @@ private:
     int32_t eqID;
     QSqlQueryModel equipedModelReserve;
     QSqlQueryModel historyEquipedModelReserve;
+    int32_t id;
 
-
+    int DamerauLevenshtein(const std::string& user_str, const std::string& dict_str);
     //QSqlQuery *qu;
     //QSqlQueryModel *model;
    // QSqlQueryModel *model1;
