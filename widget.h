@@ -216,6 +216,7 @@ private:
     QMessageBox error;
     QSqlQueryModel _eqModel;
     QString reqRowId;
+    int32_t eqID;
     QSqlQueryModel equipedModelReserve;
     QSqlQueryModel historyEquipedModelReserve;
 

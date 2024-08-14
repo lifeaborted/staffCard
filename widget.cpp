@@ -106,7 +106,6 @@ Widget::Widget(QWidget *parent)
     connect(ui->titleEdit, &QLineEdit::textEdited, this, &Widget::newEquipmentValid);
 
     generalRequest = "select name, surname, patronymic from staff";
-    eqGeneralRequest = "select * from current";
 
     ui->dataText->setFocus();
     QTimer::singleShot(0, ui->dataText, SLOT(setFocus()));
@@ -566,6 +565,7 @@ void Widget::on_eqSaveButton_clicked()
 
    equipmentListData(eqRequest);
    equipmentListData(eqGeneralRequest);
+   equipmentHistoryListData(eqHistoryRequest);
 
    ui->titleEdit->clear();
    ui->descriptionEdit->clear();
@@ -614,9 +614,6 @@ void Widget::eqEditMode(bool mode)
 
 void Widget::onTableViewItemActivated(const QModelIndex &index)
 {
-   ui->returnButton->setVisible(true);
-   ui->returnButton->setEnabled(true);
-
    eqEditMode(true);
 
    ui->eqSaveButton->setVisible(false);
@@ -638,12 +635,12 @@ void Widget::onTableViewItemActivated(const QModelIndex &index)
     reqRowId = QString("select rowid from current where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
                    .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
     qDebug()<<"ZAPROS ID"<<reqRowId;
-    eqRowId(reqRowId);
+    eqID = eqRowId(reqRowId);
 
     qDebug()<<"onTableViewItemActivated"<<title<<description<<serialNumber<<comment<<takeDate;
 
-    ui->returnButton->setVisible(!isReturned());
-    ui->returnButton->setEnabled(!isReturned());
+    ui->returnButton->setVisible(isReturned());
+    ui->returnButton->setEnabled(isReturned());
 
     ui->titleEdit->setText(title);
     ui->descriptionEdit->setText(description);
@@ -665,8 +662,8 @@ void Widget::on_eqSaveEditButton_clicked()
         QString takeDate1 = ui->takeDateW->text();
         //QString returnDate1 = ui->takeDateEdit->text();
 
-        eqRequest = QString ("update current set title = '%1', description = '%2', serialNumber = '%3', comment = '%4', takeDate = '%5' where title = '%6' and description = '%7' and serialNumber = '%8' and comment = '%9' and takeDate = '%10' and NSP = '%11'")
-                        .arg(title1).arg(description1).arg(serialNumber1).arg(comment1).arg(takeDate1).arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
+        eqRequest = QString ("update current set title = '%1', description = '%2', serialNumber = '%3', comment = '%4', takeDate = '%5' where rowid = '%6'")
+                        .arg(title1).arg(description1).arg(serialNumber1).arg(comment1).arg(takeDate1).arg(eqID);
 
         qDebug()<<"SOHRANENIE"<<endl<<"{"<<eqRequest<<endl<<eqGeneralRequest<<endl<<"}";
 
@@ -687,17 +684,21 @@ void Widget::on_eqDeleteButton_clicked()
 {
     eqEditMode(false);
 
-    eqRequest = QString ("delete from current where NSP = '%1' and  title = '%2' and description = '%3' and serialNumber = '%4' and comment = '%5' and takeDate = '%6'")
-                    .arg(item).arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate);
+    eqRequest = QString ("delete from current where rowid = '%1'")
+                    .arg(eqID);
     qDebug()<<"UDALENIE"<<endl<<"{"<<eqRequest<<endl<<eqGeneralRequest<<endl<<"}";
 
     equipmentListData(eqRequest);
     equipmentListData(eqGeneralRequest);
+    equipmentHistoryListData(eqHistoryRequest);
 
-    ui->eqSaveButton->setVisible(true);
+
+    //ui->eqSaveButton->setVisible(true);
     ui->eqAddButton->setVisible(true);
-    ui->eqSaveButton->setEnabled(true);
+    //ui->eqSaveButton->setEnabled(true);
     ui->eqAddButton->setEnabled(true);
+    ui->returnButton->setVisible(false);
+    ui->returnButton->setEnabled(false);
 
     ui->titleEdit->clear();
     ui->descriptionEdit->clear();
@@ -744,12 +745,12 @@ void Widget::on_returnButton_clicked()
     connect(newButton, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     if(dialog.exec() == QDialog::Accepted)
     {
-        eqRequest = QString ("update history set returnDate = date() where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
-                        .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
+        eqRequest = QString ("update history set returnDate = date() where rowid = '%1'")
+                        .arg(eqID);
         qDebug()<<"vozvrat"<<eqRequest;
         equipmentListData(eqRequest);
-
         equipmentListData(eqGeneralRequest);
+        equipmentHistoryListData(eqHistoryRequest);
         eqEditMode(false);
     }
     ui->returnButton->setVisible(false);
@@ -757,8 +758,8 @@ void Widget::on_returnButton_clicked()
 }
 
 bool Widget::isReturned(){
-    QString req = QString ("select returnDate from history where NSP = '%1' and  title = '%2' and description = '%3' and serialNumber = '%4' and comment = '%5' and takeDate = '%6'")
-                            .arg(item).arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate);
+    QString req = QString ("select returnDate from history where rowid = '%1'")
+                            .arg(eqID);
     qDebug()<<"test"<<req;
 
     qry = new QSqlQuery(edb);
@@ -804,9 +805,9 @@ void Widget::on_saveReturnDateEditButton_clicked()
     ui->returnDateLabel->setVisible(false);
 
     QString date = ui->returnDateEditW->text();
-    QString req = QString ("update history set returnDate = '%7' where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
-                    .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item).arg(date);
-    qDebug()<<date;
+    QString req = QString ("update history set returnDate = '%1' where rowid = '%2'")
+                      .arg(date).arg(eqID);
+    qDebug()<<"UPDATE HISTORY"<<endl<<req;
     equipmentHistoryListData(req);
     equipmentHistoryListData(eqHistoryRequest);
 }
@@ -824,6 +825,11 @@ void Widget::historyItemActivated(const QModelIndex &index)
     serialNumber = historyEquipedModelReserve.data(historyEquipedModelReserve.index(row, 2)).toString();
     comment = historyEquipedModelReserve.data(historyEquipedModelReserve.index(row, 3)).toString();
     takeDate = historyEquipedModelReserve.data(historyEquipedModelReserve.index(row, 4)).toString();
+
+    reqRowId = QString("select rowid from history where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
+                   .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
+    qDebug()<<"ZAPROS ID"<<reqRowId;
+    eqID = eqRowId(reqRowId);
 
     ui->returnDateEditButton->setVisible(!isReturned());
     ui->returnDateEditButton->setEnabled(!isReturned());
