@@ -102,9 +102,11 @@ Widget::Widget(QWidget *parent)
     connect(ui->patronymicData, &QLineEdit::textEdited, this, &Widget::newPersonValid);
     connect(ui->postData, &QLineEdit::textEdited, this, &Widget::newPersonValid);
 
+    connect(ui->serialNumberEdit, &QLineEdit::textEdited, this, &Widget::newEquipmentValid);
+    connect(ui->titleEdit, &QLineEdit::textEdited, this, &Widget::newEquipmentValid);
+
     generalRequest = "select name, surname, patronymic from staff";
     eqGeneralRequest = "select * from current";
-
 
     ui->dataText->setFocus();
     QTimer::singleShot(0, ui->dataText, SLOT(setFocus()));
@@ -130,6 +132,7 @@ Widget::Widget(QWidget *parent)
     ui->returnDateEditW->setEnabled(false);
 
     ui->returnDateLabel->setVisible(false);
+    ui->dateLabel->setVisible(false);
 
     eqEditMode(false);
     ui->takeDateW->setDate(QDate::currentDate());
@@ -528,18 +531,18 @@ void Widget::on_cancelButton_clicked()
 void Widget::on_eqAddButton_clicked()
 {
    eqEditMode(true);
-
+   ui->eqDeleteButton->setVisible(false);
+   ui->eqDeleteButton->setEnabled(false);
    ui->titleEdit->clear();
    ui->descriptionEdit->clear();
    ui->serialNumberEdit->clear();
    ui->commentEdit->clear();
    //ui->takeDateEdit->clear();
-   ui->dateLabel->setVisible(true);
    ui->eqSaveEditButton->setVisible(false);
    ui->eqSaveEditButton->setEnabled(false);
    ui->takeDateW->setEnabled(false);
    ui->takeDateW->setVisible(false);
-    ui->returnDateEdit->setVisible(false);
+   ui->returnDateEdit->setVisible(false);
 }
 
 
@@ -583,7 +586,6 @@ void Widget::eqEditMode(bool mode)
    ui->eqSaveEditButton->setEnabled(mode);
 
    ui->eqSaveButton->setVisible(mode);
-   ui->eqSaveButton->setEnabled(mode);
 
    ui->saveAddButton->setVisible(mode);
    ui->saveAddButton->setEnabled(mode);
@@ -608,7 +610,6 @@ void Widget::eqEditMode(bool mode)
 
     ui->titleNumberLabel->setVisible(mode);
     ui->descComLabel->setVisible(mode);
-    ui->dateLabel->setVisible(mode);
 }
 
 void Widget::onTableViewItemActivated(const QModelIndex &index)
@@ -633,6 +634,11 @@ void Widget::onTableViewItemActivated(const QModelIndex &index)
     serialNumber = equipedModelReserve.data(equipedModelReserve.index(row, 2)).toString();
     comment = equipedModelReserve.data(equipedModelReserve.index(row, 3)).toString();
     takeDate = equipedModelReserve.data(equipedModelReserve.index(row, 4)).toString();
+
+    reqRowId = QString("select rowid from current where title = '%1' and description = '%2' and serialNumber = '%3' and comment = '%4' and takeDate = '%5' and NSP = '%6'")
+                   .arg(title).arg(description).arg(serialNumber).arg(comment).arg(takeDate).arg(item);
+    qDebug()<<"ZAPROS ID"<<reqRowId;
+    eqRowId(reqRowId);
 
     qDebug()<<"onTableViewItemActivated"<<title<<description<<serialNumber<<comment<<takeDate;
 
@@ -826,9 +832,28 @@ void Widget::historyItemActivated(const QModelIndex &index)
 
 void Widget::newPersonValid()
 {
-    qDebug()<<"pisya";
     bool status = !ui->nameData->text().isEmpty() && !ui->patronymicData->text().isEmpty() && !ui->surnameData->text().isEmpty() && !ui->postData->text().isEmpty();
 
     ui->saveAddButton->setEnabled(status);
+
+}
+
+void Widget::newEquipmentValid()
+{
+    bool status = !ui->titleEdit->text().isEmpty() && !ui->serialNumberEdit->text().isEmpty();
+    ui->eqSaveButton->setEnabled(status);
+}
+
+int32_t Widget::eqRowId(QString req)
+{
+    qry = new QSqlQuery(edb);
+    if(qry->exec(req))
+    {
+    qry->next();
+        qDebug()<<"NOMER OF EQ"<<qry->value(0);
+    return qry->value(0).toInt();
+    }
+    else
+    qDebug()<<qry->lastError();
 
 }

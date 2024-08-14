@@ -158,6 +158,8 @@ private slots:
 
     void newPersonValid();
 
+    void newEquipmentValid();
+
     void eqEditMode(bool);
     void on_saveAddButton_clicked();
 
@@ -209,10 +211,11 @@ private:
     QString generalRequest, eqGeneralRequest, request, eqRequest, eqHistoryRequest;
     QString searchString;
     int32_t idFinder(QString);
+    int32_t eqRowId(QString);
     QString Name, Surname, Patronymic, Post, Person;
     QMessageBox error;
     QSqlQueryModel _eqModel;
-
+    QString reqRowId;
     QSqlQueryModel equipedModelReserve;
     QSqlQueryModel historyEquipedModelReserve;
 
